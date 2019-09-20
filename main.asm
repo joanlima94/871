@@ -22,53 +22,68 @@ main:
 	ori r19, 0x01
 	sts 0x27, r19
 	
-	lds r20, 0x28 //setando o bit 5 do portc
-	ori r20, 0x20 
-	sts 0x28, r20
-	
-	lds r21, 0x26 //setando o bit 0 do pinc
-	ori r21, 0x01
-	sts 0x21,r21 
+	lds r30, 0x28 //setando o bit 0 do portc
+	ori r30, 0x01 
+	sts 0x28, r30
 
-	pisca:
+	ldi r29, 0
+
+	pisca05:         //laço que pisca no periodo de 1s
+		
 		call acende05
 		call apaga05
-	
-	rjmp pisca
+
+		lds r21,0x26
+		andi r21, 0x01
+		cp r29,r21
+		breq pisca01
+
+	rjmp pisca05
+
+	pisca01:            //laço que pisca no periodo de 0,2s
+
+		call acende01
+		call apaga01
+		
+		lds r21,0x26
+		andi r21, 0x01
+		cp r29,r21
+		brne pisca05
+		
+	rjmp pisca01
 	
 
-acende05:
-		lds r17, 0x25
-		ori r17, 0x20
-		sts 0x25, r22  
+acende05:                    
+		lds r30, 0x25
+		ori r30, 0x20
+		sts 0x25, r30  
 		call atrasa05
 		ret
 
 apaga05:
-		lds r17,0x25
-		andi r17, 0xDF
-		sts 0x25,r17
+		lds r30,0x25
+		andi r30, 0xDF
+		sts 0x25,r30
 		call atrasa05
 		ret
 
 acende01:
-		lds r17, 0x25
-		ori r17, 0x20
-		sts 0x25, r22  
+		lds r30, 0x25
+		ori r30, 0x20
+		sts 0x25, r30  
 		call atrasa01
 		ret
 
 apaga01:
-		lds r17,0x25
-		andi r17, 0xDF
-		sts 0x25,r17
+		lds r30,0x25
+		andi r30, 0xDF
+		sts 0x25,r30
 		call atrasa01
 		ret
 
-
 atrasa05:  //atraso de 0,5s
 	
-	ldi r20, 200 
+	ldi r20, 50 
 	ldi r23, 0
    volta2:
    ldi r19, 200
@@ -88,7 +103,7 @@ atrasa05:  //atraso de 0,5s
 	  
 atrasa01: //atraso de 0,1s
 	
-	ldi r20, 40
+	ldi r20, 10
 	ldi r23, 0
 	retorna2:
 	ldi r19, 200
