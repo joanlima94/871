@@ -1,116 +1,198 @@
 /*
- * ativ3.c
+ * atividade5.c
  *
- * Created: 05/09/2019 05:00:09
+ * Created: 21/09/2019 15:36:26
  * Author : joan_
  */ 
-#define F_CPU 16000000UL //16 MHz de clock
 
+#define F_CPU 16000000UL
+#include <avr/interrupt.h>
 #include <util/delay.h>
 
 
-volatile unsigned char *p_ddrc;
-volatile unsigned char *p_ddrd;
-volatile unsigned char *p_portd;
-volatile unsigned char *p_pinc;
-volatile unsigned char *p_portc;
-volatile unsigned char *p_mcucr;
-unsigned char *p_ucsr0b;
+unsigned char *p_ddrc;
+unsigned char *p_portc;
+unsigned char *p_portb;
+unsigned char *p_eicra;
+unsigned char *p_eimsk;
+unsigned char *p_ddrb;
+unsigned char *p_pinc;
+unsigned char *p_portd;
+unsigned char *p_ddrd;
+unsigned char *p_pind;
 
-void setup_registradores(void)  //seta os registradores
+volatile int tempo = 1000;
+
+
+void setar(void)
 {
-	p_ucsr0b = (unsigned char *) 0xC1;
-	p_ddrd = (unsigned char *) 0x2A;
-	p_portd = (unsigned char *) 0x2B;
-	p_portc =(unsigned char *) 0x28;
+	//utilizando o mapeamento de memória para mascarar as portas 
+	
+	p_portb = (unsigned char *) 0x25;
+	p_ddrb = (unsigned char *) 0x24;
+	p_portc = (unsigned char *) 0x28;
 	p_ddrc = (unsigned char *) 0x27;
 	p_pinc = (unsigned char *) 0x26;
-	p_mcucr = (unsigned char *) 0x55;
-	*p_ucsr0b = 0;
+	p_portd = (unsigned char *) 0x2B;
+	p_ddrd = (unsigned char *) 0x2A;
+	p_pind = (unsigned char *) 0x29;
+	p_eimsk = (unsigned char *) 0x3D;
+	
+	//selecionando a porta B2,B1,B0 como saida
+	*p_ddrb |=7;
+	
+	//setando a porta C como saida
+	*p_ddrc |=1;
+	
+	//setando a porta D como saida
+	*p_ddrd |=2;
+	
+	//PB0 inicialmente apagado
+	*p_portb &=0xFE;
+	//PB1 inicialmente apagado
+	*p_portb &=0xFD;
+	//PB2 inicialmente apagado
+	*p_portb &=0xFC;
+	
+	*p_eimsk |=2; //habilitando o INT0
+	*p_eicra |=2; //Configurando o pino ISC00 em nivel alto
+	
 	*p_portc |=0x01;
-	*p_ddrd |= 0xFE;
-	*p_ddrc &= 0x00;
-	*p_mcucr &=0b11101111;
-		
+	*p_portd |=0x02; 
 }
 
+ISR(INT0_vect)
+{
+	if ((*p_pind & 0x02) ==1)
+	{
+		while(tempo>=125 && tempo<=1000)
+		{
+			tempo/=2;
+		
+			*p_portb |= 0x01; //acende o vermelho
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 0x02; //acende o verde
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 0x04; //acende o azul
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 0x03; //acende o amarelo
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 0x06; //acende o ciano
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 0x05; //acende o magenta
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 0x07; //acende o branco
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			_delay_ms(tempo);
+		
+			if (tempo==125)
+			{
+				tempo=1000;
+				break;
+			}
+		}
+	}
+	else 
+	{
+		*p_portb |= 0x01; //acende o vermelho
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x02; //acende o verde
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x04; //acende o azul
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x03; //acende o amarelo
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x06; //acende o ciano
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x05; //acende o magenta
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x07; //acende o branco
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		_delay_ms(tempo);
+	}
+}
+
+ISR(PCINT1_vect)
+{
+	if ((*p_pinc & 0x01) == 1)
+	{
+		
+		*p_portb &= 0xF8;
+		*p_portb |= 0x07; //acende o branco
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x05; //acende o magenta
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x06; //acende o ciano
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x03; //acende o amarelo
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x04; //acende o azul
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x02; //acende o verde
+		_delay_ms(tempo);
+		*p_portb &= 0xF8;
+		*p_portb |= 0x01; //acende o vermelho
+		_delay_ms(tempo);
+		
+		
+	}
+	
+}
 
 int main(void)
 {
-	setup_registradores();
+    
+	setar();
 	
-	unsigned char led=0; //contador para exibir o número do led
-
-	while(1)
-	 {
-		 if ((*p_pinc & 0x01) == 0)
-		 {
-			 _delay_ms(50);
-			if ((*p_pinc &0x01) != 0)
-			{
-				led++;
-			}
-		 }
-		 	 		 
-		 if (led==0)
-		 {
-			 *p_portd&=0x01;
-			 *p_portd |= 0x7E; //led  em 0
-		
-		 }
-		 if (led==1)
-		 {
-			 *p_portd &= 0x01; //Zera o registrador
-			 *p_portd |= 0x0C; //led  em 1 
-		 }
-		 if (led==2)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0xB6; //led  em 2
-		 }
-		 if (led==3)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0x9E; //led  em 3
-		 }
-		 if (led==4)
-	 	 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0xCC; //led  em 4
-		 }
-		 if (led==5)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0xDA; //led  em 5
-		 }
-		 if (led==6)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0xFA; //led  em 6
-		 }
-		 if (led==7)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0x0E; //led  em 7
-		 }
-		 if (led==8)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0xFE; //led  em 8
-		 }
-		 if (led==9)
-		 {
-			*p_portd &= 0x01; //Zera o registrador
-			*p_portd |= 0xCE; //led  em 9
-		 }
-		 
-		 if (led>9)
-		 {
-			 led=0;
-		 }
+	while (1)
+	{
+		if ((*p_pinc & 0x01) == 0)
+		{
+			sei();
+		}
+				
+			*p_portb |= 1; //acende o vermelho
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 2; //acende o verde
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 4; //acende o azul
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 3; //acende o amarelo
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 6; //acende o ciano
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 5; //acende o magenta
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			*p_portb |= 7; //acende o branco
+			_delay_ms(tempo);
+			*p_portb &= 0xF8;
+			_delay_ms(tempo);	
 	
-	 }
-	 
+	}
 }
-
 
