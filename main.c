@@ -1,173 +1,101 @@
 /*
- * atividade5.c
+ * atividade8.c
  *
- * Created: 21/09/2019 15:36:26
+ * Created: 01/11/2019 21:05:57
  * Author : joan_
  */ 
-
 #define F_CPU 16000000UL
+#include <avr/io.h>
 #include <avr/interrupt.h>
-#include <util/delay.h>
+#include <avr/delay.h>
+volatile int i = 0;
+volatile int estado = 0;
+volatile int cont1 = 0;
+volatile int cont2 = 0;
 
-
-unsigned char *p_ddrc;
-unsigned char *p_pcicr;
-unsigned char *p_portb;
-unsigned char *p_eicra;
-unsigned char *p_eimsk;
-unsigned char *p_ddrb;
-unsigned char *p_pinc;
-unsigned char *p_pcmsk;
-unsigned char *p_ddrd;
-unsigned char *p_pind;
-int tempo=1000;
-
-
-void setar(void)
+void configura_uart()
 {
-	//utilizando o mapeamento de memória para mascarar as portas 
-
-	p_portb = (unsigned char *) 0x25;
-	p_ddrb = (unsigned char *) 0x24;
-	p_ddrc = (unsigned char *) 0x27;
-	p_pinc = (unsigned char *) 0x26;
-	p_ddrd = (unsigned char *) 0x2A;
-	p_pind = (unsigned char *) 0x29;
-	p_eimsk = (unsigned char *) 0x3D;
-	p_eicra = (unsigned char *) 0x69;
-	p_pcicr = (unsigned char *) 0x68;
-	p_pcmsk = (unsigned char *) 0x6C;
+	//Baud rate em 38400 bps
+	UBRR0H = 0;
+	UBRR0L = 25;
 	
+	//Velocidade de transimissão normal e Multiprocessador desabilitado
+	UCSR0A = 0x00;
 	
-	//selecionando a porta B2,B1,B0 como saida
-	*p_ddrb |=7;
+	/*
+	- Transmissões USART desabilitadas
+	- Somente o transmissor ativo
+	- Numero de bits transmitidos em cada frame igual a 8
+	*/
+	UCSR0B = 0x08;
 	
-	//setando a porta C como entrada
-	*p_ddrc |=0;
-	
-	//setando o bit 3 da porta D como entrada
-	*p_ddrd |=0;
-	
-	//PB0, PB1 e PB2 inicialmente apagados
-	*p_portb &=0xF8;
-	
-	*p_eimsk |=1; //habilitando o INT0
-	*p_eicra |=3; //Configurando o pino ISC00 e ISC01 na borda de subida
-	
-	*p_pcmsk |=1; //habilita as interrupções no PCINT8
-	*p_pcicr |=2; //Habilita as interrupções em A0
+	/*Esse registrador indica as seguintes especificações:
+	-USART assincrono
+	-Bit de paridade ímpar
+	-um único bit de parada
+	-Número de bits transmitidos em cada frame (UCSZ01 e UCSZ00), no caso são 8
+	-Transmissão assíncrona
+	*/
+	UCSR0C =0b00110110;
 	
 }
 
-ISR(INT0_vect)
+void configura_ledin()
 {
-	
-		while(1)
-			{
-				
-				if ((*p_pind & 0x04) ==0)
-				{
-
-						tempo/=2;
-				}				
-				
-				*p_portb &=0xF8;
-				*p_portb |= 0x01; //acende o vermelho
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				*p_portb |= 0x02; //acende o verde
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				*p_portb |= 0x04; //acende o azul
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				*p_portb |= 0x03; //acende o amarelo
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				*p_portb |= 0x06; //acende o ciano
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				*p_portb |= 0x05; //acende o magenta
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				*p_portb |= 0x07; //acende o branco
-				_delay_ms(tempo);
-				*p_portb &= 0xF8;
-				_delay_ms(tempo);
-			   
-			   if (tempo==125)
-			   {
-				   tempo=1000;
-				   break;
-			   }
-		}
+	TCCR2A = 0x02; // Seleciona o modo de operação CTC
+	TCCR2B = 0xC2; //configura o prescaler para ter um fator 8, ou seja a frequência passa a ser 2MHz
+	OCR2A = 200; //Valor colocado no registrador que define a faixa de contagem 
+	OCR2B = 200; //Valor para ser comparado no item B
+	TIMSK2 = 0x06;
 	
 }
 
-
-ISR(PCINT1_vect)
+ISR(TIMER2_COMPA_vect)
 {
-		while(1)
+	cont1++;  //Contador q deve contar até 5000 para bater 0.5s e acender o led
+	if (cont1==5000)
+	{
+		PORTB = 0x20;
+	} else if (cont1==10000)  // Essa condição é para manter o led 0.5 apagado
+	{
+		PORTB&=0b11011111;
+		cont1=0;
+	}
+
+}
+
+ISR(TIMER2_COMPB_vect)
+{
+		cont2++;  //Contador q deve contar até 5000 para bater 0s 0.78s e acender o led
+		if (cont2==7800)
 		{
-			
-			*p_portb &= 0xF8;
-			*p_portb |= 0x07; //acende o branco
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x05; //acende o magenta
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x06; //acende o ciano
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x03; //acende o amarelo
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x04; //acende o azul
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x02; //acende o verde
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x01; //acende o vermelho
-			_delay_ms(tempo);
-			
-			}
+			PORTB = 0x10;
+		} else if (cont2==15600) // essa condição é para mantar o led 0.78s apagado
+		{
+			PORTB&=0b11101111;
+			cont2=0;
+		}
 }
 
 int main(void)
 {
-
-    
-	setar();
+    DDRB=255; //Configurado como saida
+	configura_uart();
+	configura_ledin(); 
+	
 	sei();
+	char msg[] = " Atividade 8 – Interrupcoes temporizadas tratam concorrencia entre tarefas! \n";
 
-	while (1)
+    while (1) 
+    {
+		i =0;
+		while (msg[i]!='\0')
 		{
-			*p_portb &=0xF8;
-			*p_portb |= 0x01; //acende o vermelho
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x02; //acende o verde
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x04; //acende o azul
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x03; //acende o amarelo
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x06; //acende o ciano
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x05; //acende o magenta
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			*p_portb |= 0x07; //acende o branco
-			_delay_ms(tempo);
-			*p_portb &= 0xF8;
-			_delay_ms(tempo);
+			UDR0 = msg[i];
+			while(!(UCSR0A & 0x20)) {};
+			i++;
 		}
-
+		_delay_ms(5000);
+    }
 }
 
