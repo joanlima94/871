@@ -1,0 +1,58 @@
+/*
+ * atividade10.c
+ *
+ * Created: 29/11/2019 09:02:40
+ * Author : joan_
+ */ 
+
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#define LINHA 5
+#define COLUNA 40
+
+volatile int i=0,j=0;
+volatile char letra;
+volatile char msg[LINHA][COLUNA]={"Onda senoidal\n","Onda triangular\n","Onda dente-de-serra\n","Onda AM\n","Nenhuma forma de onda selecionada\n"};
+//função q configura os registradores q serão utilizados
+
+void configura()
+{
+	//configurações da USART
+	//Velocidade de transmissão multi- processador desabilitada
+	//número de bits de dados por frame igual a 8
+	//modo assíncrono de funcionamento
+	//Sem bits de paridade
+	//Uso de dois bits de parada
+	//Baud rate de 9600
+	//Setando o PB5 como saida (Led da placa)
+	DDRB = 0x20;
+	UCSR0A = 0b00000000;
+	UCSR0B = 0b11011000;
+	UCSR0C = 0b00001110;
+	UBRR0H = 0;
+	UBRR0L = 103;
+	
+	PORTB &= ~0x20; 
+	
+}
+ISR(TIMER2_OVF_vect)
+{
+	
+}
+ISR(USART_RX_vect)
+{
+	letra=UDR0;
+}
+
+ISR(USART_TX_vect)
+{
+	
+}
+int main(void)
+{
+	sei();
+    while (1) 
+    {
+    }
+}
+
